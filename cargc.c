@@ -1,45 +1,56 @@
 #include <stdio.h>
 
-int *registers;
-
-int main()
+struct range
 {
-	registers = malloc(4*sizeof(int));
+	long start;
+	long end;
+};
 
-	print_regs();
-	read_registers();
-	print_regs();
 
-	return 0;
-}
-
-void print_regs()
+void print_regs(int *regs)
 {
-	printf("%d, %d, %d, %d\n", registers[0], registers[1], registers[2], registers[3]);
+	printf("eax: %d, ebx: %d, ecx: %d, edx: %d\n", regs[0], regs[1], regs[2], regs[3]);
 }
 
 int GCalloc(int size)
 {
-	
+
 }
 
 int GCfree(int *ptr)
 {
-	
+
 }
 
-void read_registers(void)
+void read_regs(int *regs)
 {
-	int r;
-	asm ("movl %%eax, %0\n" :"=r"(r));
-	registers[0] = r;
-	
-	asm ("movl %%ebx, %0\n" :"=r"(r));
-	registers[1] = r;
-	
-	asm ("movl %%ecx, %0\n" :"=r"(r));
-	registers[2] = r;
-	
-	asm ("movl %%edx, %0\n" :"=r"(r));
-	registers[3] = r;
+	__asm__ ("movl %%eax, %0\n" :"=r"(regs[0]));
+	__asm__ ("movl %%ebx, %0\n" :"=r"(regs[1]));
+	__asm__ ("movl %%ecx, %0\n" :"=r"(regs[2]));
+	__asm__ ("movl %%edx, %0\n" :"=r"(regs[3]));
+}
+
+struct range *read_maps()
+{
+	FILE *fp = fopen("/proc/self/maps", "r");
+	struct range *rs = calloc(128, sizeof(*rs));
+
+	for(int i = 0; getc(fp) == EOF; i++)
+	{
+		char c;
+		long start, end;
+
+		while((c = getc(fp)) != '-')
+			start = start * 16 + (c - '0');
+
+		while((c = getc(fp)) != ' ')
+			end = end * 16 + (c - '0');
+
+		while(getc(fp) != '\n');
+
+		struct range r = { start, end };
+		rs[i] = r;
+	}
+
+	return rs;
 }
